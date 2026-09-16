@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RI.11.1 & L.11.4 Focus Lab | Olaudah Equiano Blueprint</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF for Client-side PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-serif-hist { font-family: 'Cinzel', serif; }
+        .font-mono-tech { font-family: 'Courier Prime', monospace; }
+        
+        /* Blueprint Aesthetics */
+        .blueprint-bg {
+            background-color: #0b192c;
+            background-image: 
+                linear-gradient(rgba(30, 58, 138, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 58, 138, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        /* Gamification Glows */
+        .xp-glow { box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .badge-unlocked { border-color: #f59e0b; background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .badge-locked { border-color: #334155; background: rgba(15, 23, 42, 0.6); color: #64748b; }
+        
+        /* Interactive Text Cards */
+        .para-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .para-card:hover {
+            border-color: #3b82f6;
+            background-color: rgba(30, 58, 138, 0.25);
+        }
+        .vocab-tag {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid #f59e0b;
+            color: #fef08a;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .vocab-tag:hover {
+            background: #f59e0b;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen select-none overflow-x-hidden">
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- LOCKDOWN WARNING BAR -->
+    <div id="lockdownWarning" class="fixed top-0 left-0 right-0 z-50 bg-amber-600 text-white text-xs font-bold py-2 px-4 text-center hidden flex items-center justify-between shadow-2xl">
+        <span>⚠️ FOCUS LOSS DETECTED: Returning to Google Meet? Move mouse back to workspace.</span>
+        <span id="graceTimer" class="bg-amber-900 px-3 py-0.5 rounded text-amber-200 font-mono">Grace: 5s</span>
+    </div>
+
+    <!-- LOGIN / AUTH MODAL -->
+    <div id="loginModal" class="fixed inset-0 z-40 flex items-center justify-center blueprint-bg p-4">
+        <div class="bg-slate-900/90 border-2 border-blue-500/40 rounded-2xl max-w-md w-full p-8 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-block bg-blue-900/50 border border-blue-400/30 px-3 py-1 rounded-full text-xs text-blue-300 font-mono">HISTORICAL ANALYSIS APP • SEC. 03</div>
+                <h1 class="text-2xl font-serif-hist font-bold text-amber-400 tracking-wider">EQUILAB 1789</h1>
+                <p class="text-xs text-slate-400">Adaptive Evidence & Vocabulary Workspace</p>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 mb-1">USER NAME / PRINCIPAL LOGIN</label>
+                    <input type="text" id="usernameInput" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-400 font-mono text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 mb-1">PASSCODE</label>
+                    <input type="password" id="passwordInput" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-amber-400 font-mono text-sm">
+                </div>
+                <div id="loginError" class="text-red-400 text-xs hidden text-center font-mono">Invalid credentials. Contact administrator.</div>
+                
+                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all transform active:scale-95 shadow-lg text-sm tracking-wider uppercase">
+                    Initialize Workspace
+                </button>
+            </form>
+            <div class="text-[11px] text-center text-slate-500 font-mono">Google Meet Compatible • Real-Time Security Audit</div>
+        </div>
+    </div>
+
+    <!-- MAIN GAMIFIED INTERFACE -->
+    <div id="appInterface" class="hidden min-h-screen flex flex-col">
+        
+        <!-- HUD HEADER -->
+        <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xl">
+            <!-- Student Profile & Tier -->
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-bold text-amber-400 font-mono" id="userAvatar">ST</div>
+                <div>
+                    <h2 id="studentNameDisplay" class="font-bold text-slate-100 text-sm">Student Name</h2>
+                    <p id="tierDisplay" class="text-[11px] text-slate-400 font-mono">Scaffolding: --</p>
+                </div>
+
+                <!-- PRINCIPAL TIER NAVIGATOR CONTROL -->
+                <div id="principalTierControl" class="hidden flex items-center space-x-2 bg-amber-950/80 border border-amber-500/50 px-3 py-1 rounded-lg ml-4">
+                    <span class="text-[10px] font-mono text-amber-400 font-bold uppercase">👑 Tier Nav:</span>
+                    <select id="principalTierSelect" onchange="switchPrincipalTier(this.value)" class="bg-slate-900 border border-amber-500/40 text-amber-300 text-xs font-mono rounded px-2 py-0.5 focus:outline-none">
+                        <option value="1">Tier 1 (Guided)</option>
+                        <option value="2">Tier 2 (Core)</option>
+                        <option value="3" selected>Tier 3 (Mastery)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- GAMIFIED HUD STATS -->
+            <div class="flex items-center space-x-8">
+                <!-- Level & XP Bar -->
+                <div class="flex flex-col w-48 space-y-1">
+                    <div class="flex justify-between text-[11px] font-mono">
+                        <span class="text-amber-400 font-bold" id="levelDisplay">LVL 1 ANALYST</span>
+                        <span class="text-slate-400" id="xpTextDisplay">0 / 300 XP</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                        <div id="xpProgressBar" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <!-- Session Metrics -->
+                <div class="flex space-x-6 text-xs font-mono">
+                    <div class="text-center">
+                        <span class="text-slate-500 block text-[10px]">TIME</span>
+                        <span id="sessionTimer" class="text-emerald-400 font-bold">45:00</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="text-slate-500 block text-[10px]">SECURITY</span>
+                        <span id="violationCount" class="text-slate-300 font-bold">0 Strikes</span>
+                    </div>
+                </div>
+
+                <!-- Export Button -->
+                <button onclick="triggerExport()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg flex items-center space-x-2">
+                    <span>📄</span>
+                    <span>EXPORT BLUEPRINT REPORT</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN WORKSPACE SPLIT -->
+        <main class="flex-1 grid grid-cols-12 overflow-hidden bg-slate-950">
+            
+            <!-- LEFT PANE: PRIMARY TEXT (Col 7) -->
+            <section class="col-span-7 bg-slate-900/60 border-r border-slate-800 p-6 overflow-y-auto max-h-[calc(100vh-65px)] space-y-4">
+                <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-mono text-amber-400 tracking-widest uppercase">Primary Source Text</span>
+                        <h1 class="text-lg font-serif-hist font-bold text-slate-100">The Interesting Narrative of the Life of Olaudah Equiano (1789)</h1>
+                    </div>
+                    <span class="text-xs bg-blue-900/40 border border-blue-500/30 text-blue-300 px-2.5 py-1 rounded-lg font-mono">💡 Click paragraph to auto-quote</span>
+                </div>
+
+                <!-- PARAGRAPHS CONTAINER -->
+                <div class="space-y-4 font-serif text-slate-300 text-sm leading-relaxed">
+                    <!-- P1 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(1, `At last when the ship we were in, had got in all her cargo, they made ready with many fearful noises... The stench of the hold while we were on the coast was so intolerably loathsome...`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 1</span>
+                        At last when the ship we were in, had got in all her cargo, they made ready with many fearful noises, and we were put under deck, so that we could not see how they managed the vessel. But this disappointment was the least of my sorrow. The stench of the hold while we were on the coast was so intolerably <span class="vocab-tag" onclick="event.stopPropagation(); selectVocab('loathsome')">loathsome</span>, that it was dangerous to remain there for any time, and some of us had been permitted to stay on the deck for the fresh air; but now that the whole ship's cargo were confined together, it became absolutely pestilential. The closeness of the place, and the heat of the climate, added to the number in the ship, which was so crowded that each had scarcely room to turn himself, almost suffocated us.
+                    </div>
+
+                    <!-- P2 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(2, `This produced copious perspirations, so that the air soon became unfit for respiration... This wretched situation was again aggravated by the galling of the chains...`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 2</span>
+                        This produced copious perspirations, so that the air soon became unfit for respiration, from a variety of loathsome smells, and brought on a sickness among the slaves, of which many died—thus falling victims to the improvident avarice, as I may call it, of their purchasers. This <span class="vocab-tag" onclick="event.stopPropagation(); selectVocab('wretched')">wretched</span> situation was again aggravated by the galling of the chains, now become insupportable, and the filth of the necessary tubs, into which the children often fell, and were almost suffocated. The shrieks of the women, and the groans of the dying, rendered the whole a scene of horror almost inconceivable...
+                    </div>
+
+                    <!-- P3 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(3, `One day they had taken a number of fishes... rather than give any of them to us to eat... they tossed the remaining fish into the sea again...`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 3</span>
+                        One day they had taken a number of fishes; and when they had killed and satisfied themselves with as many as they thought fit, to our astonishment who were on deck, rather than give any of them to us to eat, as we expected, they tossed the remaining fish into the sea again, although we begged and prayed for some as well as we could, but in vain; and some of my countrymen, being pressed by hunger, took an opportunity, when they thought no one saw them, of trying to get a little privately; but they were discovered, and the attempt procured them some very severe floggings.
+                    </div>
+
+                    <!-- P4 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(4, `Two of my wearied countrymen who were chained together... preferring death to such a life of misery, jumped into the sea; immediately, another quite dejected fellow... followed their example...`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 4</span>
+                        One day, when we had a smooth sea and moderate wind, two of my wearied countrymen who were chained together (I was near them at the time), preferring death to such a life of misery, somehow made through the nettings and jumped into the sea; immediately, another quite <span class="vocab-tag" onclick="event.stopPropagation(); selectVocab('dejected')">dejected</span> fellow, who, on account of his illness, was suffered to be out of irons, also followed their example; and I believe many more would very soon have done the same, if they had not been prevented by the ship's crew, who were instantly alarmed...
+                    </div>
+
+                    <!-- P5 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(5, `During our passage, I first saw flying fishes... I also now first saw the use of the quadrant... I was now more persuaded than ever, that I was in another world, and that every thing about me was magic.`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 5</span>
+                        During our passage, I first saw flying fishes, which surprised me very much; they used frequently to fly across the ship, and many of them fell on the deck. I also now first saw the use of the quadrant; I had often with astonishment seen the mariners make observations with it, and I could not think what it meant. They at last took notice of my surprise; and one of them, willing to increase it, as well as to gratify my curiosity, made me one day look through it. The clouds appeared to me to be land, which disappeared as they passed along. This heightened my wonder; and I was now more persuaded than ever, that I was in another world, and that every thing about me was magic. At last, we came in sight of the island of Barbados...
+                    </div>
+
+                    <!-- P6 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(6, `We thought by this, we should be eaten by these ugly men... at last the white people got some old slaves from the land to pacify us.`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 6</span>
+                        We thought by this, we should be eaten by these ugly men, as they appeared to us; and, when soon after we were all put down under the deck again, there was much dread and trembling among us, and nothing but bitter cries to be heard all the night from these apprehensions, insomuch, that at last the white people got some old slaves from the land to pacify us. They told us we were not to be eaten, but to work, and were soon to go on land, where we should see many of our country people. This report eased us much...
+                    </div>
+
+                    <!-- P7 -->
+                    <div class="para-card p-4 rounded-xl border border-slate-800 bg-slate-900/80" onclick="autoSelectQuote(7, `We were conducted immediately to the merchant's yard, where we were all pent up together, like so many sheep in a fold... On a signal given (as the beat of a drum), the buyers rush at once into the yard...`)">
+                        <span class="text-xs font-mono font-bold text-amber-400/80 block mb-1">PARAGRAPH 7</span>
+                        We were conducted immediately to the merchant's yard, where we were all pent up together, like so many sheep in a fold, without regard to sex or age.... We were not many days in the merchant's custody, before we were sold after their usual manner, which is this: On a signal given (as the beat of a drum), the buyers rush at once into the yard where the slaves are confined, and make choice of that parcel they like best...
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANE: GAMIFIED ACTIVE LAB (Col 5) -->
+            <section class="col-span-5 bg-slate-950 p-6 overflow-y-auto max-h-[calc(100vh-65px)] space-y-6">
+                
+                <!-- BADGES UNLOCKED HUD -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <h3 class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex justify-between">
+                        <span>ACHIEVEMENT BADGES</span>
+                        <span id="badgeCount" class="text-slate-500">0/3 Unlocked</span>
+                    </h3>
+                    <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+                        <div id="badge1" class="badge-locked border rounded-lg p-2 flex flex-col items-center justify-center space-y-1">
+                            <span class="text-base">🔍</span>
+                            <span>FIRST EVIDENCE</span>
+                        </div>
+                        <div id="badge2" class="badge-locked border rounded-lg p-2 flex flex-col items-center justify-center space-y-1">
+                            <span class="text-base">📖</span>
+                            <span>VOCAB MASTER</span>
+                        </div>
+                        <div id="badge3" class="badge-locked border rounded-lg p-2 flex flex-col items-center justify-center space-y-1">
+                            <span class="text-base">🧩</span>
+                            <span>AMBIGUITY SLEUTH</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- L.11.4 VOCABULARY WORKBENCH -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <h3 class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>L.11.4 VOCAB WORKBENCH</span>
+                        <span class="text-[10px] text-emerald-400 font-bold">+50 XP PER WORD</span>
+                    </h3>
+                    <div id="vocabPanel" class="space-y-3 text-xs">
+                        <div class="p-3 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-500 italic text-center font-mono">
+                            Click highlighted gold tags in the text (e.g. loathsome, wretched, dejected) to open decoding workbench.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RI.11.1 EVIDENCE & INFERENCE ENGINE -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-4">
+                    <h3 class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex justify-between">
+                        <span>RI.11.1 EVIDENCE & INFERENCE</span>
+                        <span class="text-[10px] text-emerald-400 font-bold">+100 XP PER ENTRY</span>
+                    </h3>
+
+                    <!-- SCAFFOLDING GUIDANCE INSTRUCTION BOX -->
+                    <div id="tierScaffoldBox" class="p-3 rounded-lg text-xs space-y-1 font-mono">
+                        <!-- Dynamic Instructions Injected via JS -->
+                    </div>
+
+                    <!-- RESPONSE INPUTS -->
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-400 font-mono mb-1 text-[11px]">SELECTED EVIDENCE QUOTE (Auto-Filled or Typed)</label>
+                            <textarea id="quoteInput" rows="2" placeholder="Click any paragraph card on the left to extract quote..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-amber-400 focus:outline-none font-serif"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-slate-400 font-mono mb-1 text-[11px]">ANALYSIS / INFERENCE RESPONSE</label>
+                            <textarea id="inferenceInput" rows="3" placeholder="Write analysis based on your scaffolding frame..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-amber-400 focus:outline-none"></textarea>
+                        </div>
+
+                        <div id="ambiguityContainer" class="hidden">
+                            <label class="block text-purple-300 font-mono mb-1 text-[11px]">TEXTUAL AMBIGUITY (Tier 3 Extension • +50 Bonus XP)</label>
+                            <textarea id="ambiguityInput" rows="2" placeholder="Where does Equiano leave matters open-ended or uncertain?" class="w-full bg-slate-950 border border-purple-900/50 rounded-lg p-2.5 text-slate-200 focus:border-purple-400 focus:outline-none"></textarea>
+                        </div>
+
+                        <button onclick="saveEvidenceEntry()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-lg transition-all text-xs font-mono tracking-wider uppercase shadow-lg transform active:scale-95">
+                            + COMMIT EVIDENCE ENTRY (+100 XP)
+                        </button>
+                    </div>
+
+                    <!-- SAVED ENTRIES LEDGER -->
+                    <div class="border-t border-slate-800 pt-3 space-y-2">
+                        <h4 class="text-[10px] font-mono font-bold text-slate-400 uppercase">LOGGED EVIDENCE LEDGER</h4>
+                        <div id="savedEvidenceList" class="space-y-2 max-h-36 overflow-y-auto">
+                            <!-- Dynamic Entries -->
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- MAIN JAVASCRIPT APP LOGIC -->
+    <script>
+        // UPDATED CLASS ROSTER MATRIX (0439/03 AMERICAN LITERATURE 11TH)
+        const ROSTER = {
+            "principal": { name: "Principal / Administrator", id: "ADMIN01", tier: 3, pass: "Lead1789!", base: 100, target: 100, isPrincipal: true },
+            "ybarrientos": { name: "Barrientos, Yussef", id: "00000000", tier: 3, pass: "admin2026", base: 100, target: 100, isPrincipal: true },
+            "vargueta": { name: "Argueta Quijada, Valeria Sofia", id: "22181293", tier: 1, pass: "equi1293", base: 68.44, target: 78.70 },
+            "ibarrios": { name: "Barrios Castillo, Ian Dannyel", id: "11103553", tier: 2, pass: "equi3553", base: 84.20, target: 92.00 },
+            "kcaballero": { name: "Caballero Pinto, Kary Betel", id: "11103560", tier: 2, pass: "equi3560", base: 81.34, target: 90.00 },
+            "rcastrillo": { name: "Castrillo González, Roberto Augusto", id: "11103555", tier: 3, pass: "equi3555", base: 89.46, target: 98.00 },
+            "dcomte": { name: "Comte Ralda, Daniel", id: "11103576", tier: 2, pass: "equi3576", base: 74.99, target: 86.20 },
+            "aesposito": { name: "Espósito Morales, Angelo Paolo", id: "11103578", tier: 2, pass: "equi3578", base: 83.47, target: 92.00 },
+            "vfont": { name: "Font Velez, Valentina", id: "11103561", tier: 2, pass: "equi3561", base: 78.33, target: 89.00 },
+            "dgodoy": { name: "Godoy Turcios, Diego", id: "21800103", tier: 1, pass: "equi0103", base: 60.44, target: 72.00 },
+            "lgonzalez": { name: "Gonzalez López, Luis Fernando", id: "11103501", tier: 2, pass: "equi3501", base: 81.59, target: 90.00 },
+            "nlara": { name: "Lara Barrios, Niccolo", id: "22181257", tier: 1, pass: "equi1257", base: 67.87, target: 78.00 },
+            "jleon": { name: "León Lau, José Martín", id: "22181098", tier: 3, pass: "equi1098", base: 86.72, target: 98.00 },
+            "alu": { name: "Lu Chun, Ana Paula", id: "22181435", tier: 2, pass: "equi1435", base: 76.16, target: 87.50 },
+            "dmarroquin": { name: "Marroquín Saavedra, Diana Sofía", id: "11103585", tier: 3, pass: "equi3585", base: 92.47, target: 99.00 },
+            "smelendez": { name: "Meléndez Maldonado, Santiago", id: "11103586", tier: 1, pass: "equi3586", base: 67.07, target: 77.00 },
+            "amonteros": { name: "Monteros Santos, Adrian Ronaldo", id: "22181357", tier: 1, pass: "equi1357", base: 61.27, target: 72.00 },
+            "credondo": { name: "Redondo Tambasco, Cristián", id: "22180710", tier: 1, pass: "equi0710", base: 69.61, target: 80.00 },
+            "irojas": { name: "Rojas Flores, Ian Sebastian", id: "11103649", tier: 2, pass: "equi3649", base: 74.57, target: 85.70 }
+        };
+
+        // GLOBAL APP STATE
+        let currentUser = null;
+        let sessionViolations = 0;
+        let graceTimerVal = 5;
+        let graceInterval = null;
+        let evidenceEntries = [];
+        let vocabDecoded = [];
+        let userXP = 0;
+        let userLevel = 1;
+        let unlockedBadges = { b1: false, b2: false, b3: false };
+
+        // AUTHENTICATION LOGIC
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById("usernameInput").value.trim().toLowerCase();
+            const p = document.getElementById("passwordInput").value.trim();
+
+            if (ROSTER[u] && ROSTER[u].pass === p) {
+                currentUser = ROSTER[u];
+                document.getElementById("loginModal").classList.add("hidden");
+                document.getElementById("appInterface").classList.remove("hidden");
+                
+                if (currentUser.isPrincipal) {
+                    document.getElementById("principalTierControl").classList.remove("hidden");
+                }
+
+                setupWorkspace();
+                initLockdownGuard();
+                showToast(`🏆 Welcome ${currentUser.name}! Workspace Initialized.`, "amber");
+            } else {
+                document.getElementById("loginError").classList.remove("hidden");
+            }
+        }
+
+        // PRINCIPAL TIER SWITCHING
+        function switchPrincipalTier(newTier) {
+            currentUser.tier = parseInt(newTier);
+            setupWorkspace();
+            showToast(`👑 Principal View: Switched to Tier ${newTier} Scaffolding`, "blue");
+        }
+
+        // TIER SCAFFOLDING & HUD SETUP
+        function setupWorkspace() {
+            document.getElementById("studentNameDisplay").innerText = currentUser.name;
+            document.getElementById("userAvatar").innerText = currentUser.name.split(" ").map(n=>n[0]).join("").slice(0,2);
+            
+            const tierNames = { 1: "Tier 1 (Guided Support)", 2: "Tier 2 (Core Analysis)", 3: "Tier 3 (Mastery & Ambiguity)" };
+            document.getElementById("tierDisplay").innerText = `${tierNames[currentUser.tier]} | Target: ${currentUser.target}%`;
+
+            const scaffoldBox = document.getElementById("tierScaffoldBox");
+            const ambiguityContainer = document.getElementById("ambiguityContainer");
+
+            if (currentUser.tier === 1) {
+                scaffoldBox.className = "p-3 rounded-lg text-xs space-y-1 font-mono bg-blue-950/60 border border-blue-500/40 text-blue-200";
+                scaffoldBox.innerHTML = `<strong>TIER 1 FRAME:</strong> "Equiano demonstrates the cruelty of the captors when he writes <em>'[QUOTE]'</em>, which implies that..."`;
+                ambiguityContainer.classList.add("hidden");
+            } else if (currentUser.tier === 2) {
+                scaffoldBox.className = "p-3 rounded-lg text-xs space-y-1 font-mono bg-emerald-950/60 border border-emerald-500/40 text-emerald-200";
+                scaffoldBox.innerHTML = `<strong>TIER 2 CORE:</strong> Connect your direct quote to Equiano's psychological state and physical conditions below.`;
+                ambiguityContainer.classList.add("hidden");
+            } else {
+                scaffoldBox.className = "p-3 rounded-lg text-xs space-y-1 font-mono bg-purple-950/60 border border-purple-500/40 text-purple-200";
+                scaffoldBox.innerHTML = `<strong>TIER 3 MASTERY:</strong> Complete both standard analysis and the Unresolved Ambiguity field below.`;
+                ambiguityContainer.classList.remove("hidden");
+            }
+        }
+
+        // GAMIFICATION: XP & BADGES SYSTEM
+        function addXP(amount, reason) {
+            userXP += amount;
+            showToast(`+${amount} XP: ${reason}`, "emerald");
+
+            // Level Up logic
+            if (userXP >= 300 && userLevel === 1) {
+                userLevel = 2;
+                showToast("🎉 LEVEL UP! Promoted to LVL 2 HISTORIAN!", "amber");
+            } else if (userXP >= 600 && userLevel === 2) {
+                userLevel = 3;
+                showToast("⚡ LEVEL UP! Promoted to LVL 3 MASTER SCHOLAR!", "amber");
+            }
+
+            // Update HUD
+            document.getElementById("levelDisplay").innerText = `LVL ${userLevel} ${userLevel === 1 ? 'ANALYST' : userLevel === 2 ? 'HISTORIAN' : 'SCHOLAR'}`;
+            document.getElementById("xpTextDisplay").innerText = `${userXP} / ${userLevel * 300} XP`;
+            const pct = Math.min(100, (userXP / (userLevel * 300)) * 100);
+            document.getElementById("xpProgressBar").style.width = `${pct}%`;
+        }
+
+        function checkBadges() {
+            if (evidenceEntries.length >= 1 && !unlockedBadges.b1) {
+                unlockedBadges.b1 = true;
+                unlockBadgeUI("badge1");
+            }
+            if (vocabDecoded.length >= 1 && !unlockedBadges.b2) {
+                unlockedBadges.b2 = true;
+                unlockBadgeUI("badge2");
+            }
+            if (evidenceEntries.some(e => e.ambiguity) && !unlockedBadges.b3) {
+                unlockedBadges.b3 = true;
+                unlockBadgeUI("badge3");
+            }
+
+            const count = Object.values(unlockedBadges).filter(Boolean).length;
+            document.getElementById("badgeCount").innerText = `${count}/3 Unlocked`;
+        }
+
+        function unlockBadgeUI(id) {
+            const el = document.getElementById(id);
+            el.className = "badge-unlocked border rounded-lg p-2 flex flex-col items-center justify-center space-y-1 font-bold";
+            showToast("🎖️ ACHIEVEMENT UNLOCKED!", "amber");
+        }
+
+        // AUTO-QUOTE ON CARD CLICK
+        function autoSelectQuote(paraNum, quoteText) {
+            document.getElementById("quoteInput").value = `[P${paraNum}] "${quoteText}"`;
+            showToast(`Paragraph ${paraNum} quote selected!`, "blue");
+        }
+
+        // L.11.4 VOCAB DECODING
+        function selectVocab(word) {
+            const vocabPanel = document.getElementById("vocabPanel");
+            vocabPanel.innerHTML = `
+                <div class="space-y-2 bg-slate-950 p-3 rounded-lg border border-amber-500/40">
+                    <div class="font-mono font-bold text-amber-400 capitalize text-sm">TARGET WORD: ${word.toUpperCase()}</div>
+                    <label class="block text-[10px] text-slate-400 font-mono">SELECT L.11.4 STRATEGY:</label>
+                    <select id="vocabStrategySelect" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200 font-mono">
+                        <option>Context Clues (Surrounding Passage)</option>
+                        <option>Base Word / Root Analysis</option>
+                        <option>Contrast / Comparison Clues</option>
+                    </select>
+                    <input type="text" id="vocabDefInput" placeholder="Write context definition..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
+                    <button onclick="saveVocab('${word}')" class="w-full bg-amber-500 text-slate-950 font-bold py-1.5 rounded text-xs font-mono">LOG DECODED WORD (+50 XP)</button>
+                </div>
+            `;
+        }
+
+        function saveVocab(word) {
+            const strat = document.getElementById("vocabStrategySelect").value;
+            const def = document.getElementById("vocabDefInput").value.trim();
+            if(!def) return;
+
+            vocabDecoded.push({ word, strat, def });
+            addXP(50, `Decoded "${word}"`);
+            checkBadges();
+
+            document.getElementById("vocabPanel").innerHTML = `
+                <div class="text-emerald-400 font-mono font-bold text-xs p-2 bg-emerald-950/40 rounded border border-emerald-500/30">
+                    ✓ Logged "${word}" into Blueprint Ledger!
+                </div>
+            `;
+        }
+
+        // RI.11.1 EVIDENCE COMMIT
+        function saveEvidenceEntry() {
+            const q = document.getElementById("quoteInput").value.trim();
+            const inf = document.getElementById("inferenceInput").value.trim();
+            const amb = document.getElementById("ambiguityInput").value.trim();
+
+            if (!q || !inf) {
+                showToast("Please provide both a quote and analysis!", "red");
+                return;
+            }
+
+            evidenceEntries.push({ quote: q, inference: inf, ambiguity: amb });
+            addXP(100, "Evidence Entry Logged");
+            if (amb) addXP(50, "Ambiguity Analysis Bonus");
+            
+            checkBadges();
+
+            // Clear inputs
+            document.getElementById("quoteInput").value = "";
+            document.getElementById("inferenceInput").value = "";
+            document.getElementById("ambiguityInput").value = "";
+
+            renderEvidenceList();
+        }
+
+        function renderEvidenceList() {
+            const list = document.getElementById("savedEvidenceList");
+            list.innerHTML = evidenceEntries.map((item, idx) => `
+                <div class="bg-slate-950 border border-slate-800 p-2.5 rounded-lg text-xs space-y-1">
+                    <p class="text-amber-300 font-serif italic text-[11px]">${item.quote}</p>
+                    <p class="text-slate-300"><strong>Analysis:</strong> ${item.inference}</p>
+                    ${item.ambiguity ? `<p class="text-purple-300"><strong>Ambiguity:</strong> ${item.ambiguity}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // LOCKDOWN & GOOGLE MEET GUARD
+        function initLockdownGuard() {
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) {
+                    sessionViolations++;
+                    document.getElementById("violationCount").innerText = `${sessionViolations} Strikes`;
+                    showToast("⚠️ SECURITY STRIKE: Tab switched!", "red");
+                }
+            });
+
+            window.addEventListener("blur", () => {
+                if (!document.hidden) startGraceCountdown();
+            });
+
+            window.addEventListener("focus", () => stopGraceCountdown());
+        }
+
+        function startGraceCountdown() {
+            const warningBar = document.getElementById("lockdownWarning");
+            warningBar.classList.remove("hidden");
+            graceTimerVal = 5;
+
+            clearInterval(graceInterval);
+            graceInterval = setInterval(() => {
+                graceTimerVal--;
+                document.getElementById("graceTimer").innerText = `Grace: ${graceTimerVal}s`;
+                if (graceTimerVal <= 0) {
+                    clearInterval(graceInterval);
+                    sessionViolations++;
+                    document.getElementById("violationCount").innerText = `${sessionViolations} Strikes`;
+                    stopGraceCountdown();
+                }
+            }, 1000);
+        }
+
+        function stopGraceCountdown() {
+            clearInterval(graceInterval);
+            document.getElementById("lockdownWarning").classList.add("hidden");
+        }
+
+        // TOAST NOTIFIER
+        function showToast(msg, color) {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            const bgClass = color === 'amber' ? 'bg-amber-500 text-slate-950' : color === 'emerald' ? 'bg-emerald-600 text-white' : color === 'blue' ? 'bg-blue-600 text-white' : 'bg-red-600 text-white';
+            
+            toast.className = `${bgClass} font-mono font-bold text-xs px-4 py-3 rounded-xl shadow-2xl transition-all transform translate-y-2 opacity-0`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.remove("translate-y-2", "opacity-0"), 10);
+            setTimeout(() => {
+                toast.classList.add("opacity-0");
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // CONTEXTUALIZED HISTORICAL BLUEPRINT PDF GENERATOR
+        function triggerExport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+            // 1. BLUEPRINT BACKGROUND DRAWING
+            doc.setFillColor(11, 25, 44); // Blueprint Dark Navy Background
+            doc.rect(0, 0, 210, 297, "F");
+
+            // Blueprint Grid Lines
+            doc.setDrawColor(30, 58, 138);
+            doc.setLineWidth(0.2);
+            for (let x = 0; x < 210; x += 10) doc.line(x, 0, x, 297);
+            for (let y = 0; y < 297; y += 10) doc.line(0, y, 210, y);
+
+            // Double Border Frame
+            doc.setDrawColor(245, 158, 11); // Gold
+            doc.setLineWidth(0.8);
+            doc.rect(8, 8, 194, 281);
+            doc.setDrawColor(30, 58, 138);
+            doc.rect(10, 10, 190, 277);
+
+            // 2. SHIP BLUEPRINT HEADER DIAGRAM (1788 Brookes Vector Schematic)
+            doc.setDrawColor(245, 158, 11);
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, 15, 180, 28, "FD");
+
+            // Vector Hull
+            doc.setLineWidth(0.5);
+            doc.line(20, 29, 185, 29); // Hull deck line
+            doc.line(25, 38, 180, 38); // Lower deck line
+            // Ship Bow & Stern curves
+            doc.line(20, 29, 25, 38);
+            doc.line(185, 29, 180, 38);
+            
+            // Internal Deck Compartments
+            doc.rect(30, 31, 35, 5); doc.text("STORE ROOM", 32, 34.5);
+            doc.rect(70, 31, 70, 5); doc.text("SLAVE HOLD CARGO DECK (400 CAPTIVES)", 72, 34.5);
+            doc.rect(145, 31, 30, 5); doc.text("STORE ROOM", 147, 34.5);
+
+            // Title Header overlay
+            doc.setFont("courier", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(245, 158, 11);
+            doc.text("HISTORICAL ARCHIVE BLUEPRINT • BROOKES SLAVE SHIP SCHEMATIC (1788)", 17, 20);
+
+            // 3. STUDENT METRICS DOSSIER
+            doc.setFontSize(9);
+            doc.setTextColor(226, 232, 240);
+            doc.text(`USER / STUDENT : ${currentUser.name.toUpperCase()}`, 15, 50);
+            doc.text(`USER ID        : ${currentUser.id}`, 15, 55);
+            doc.text(`ACCOMMODATION : TIER ${currentUser.tier} SCAFFOLDING`, 15, 60);
+            
+            doc.text(`HISTORICAL BASELINE : ${currentUser.base}%`, 110, 50);
+            doc.text(`TARGET SCORE (+15%) : ${currentUser.target}%`, 110, 55);
+            doc.text(`XP EARNED / LEVEL   : ${userXP} XP (LVL ${userLevel})`, 110, 60);
+            doc.text(`SECURITY AUDIT      : ${sessionViolations} FOCUS WARNINGS`, 110, 65);
+
+            doc.setDrawColor(245, 158, 11);
+            doc.line(15, 68, 195, 68);
+
+            // 4. L.11.4 VOCABULARY DECODING LEDGER
+            let y = 75;
+            doc.setFontSize(10);
+            doc.setTextColor(245, 158, 11);
+            doc.text("L.11.4 VOCABULARY DECODING LEDGER:", 15, y);
+            
+            y += 6;
+            doc.setFontSize(8);
+            doc.setTextColor(226, 232, 240);
+
+            if (vocabDecoded.length === 0) {
+                doc.text("No vocabulary entries recorded for this session.", 20, y);
+                y += 8;
+            } else {
+                vocabDecoded.forEach((v) => {
+                    const text = `• [${v.word.toUpperCase()}] (${v.strat}): "${v.def}"`;
+                    const lines = doc.splitTextToSize(text, 175);
+                    doc.text(lines, 20, y);
+                    y += (lines.length * 4) + 2;
+                });
+            }
+
+            y += 4;
+            doc.setDrawColor(30, 58, 138);
+            doc.line(15, y, 195, y);
+            y += 6;
+
+            // 5. RI.11.1 TEXTUAL EVIDENCE & INFERENCE LEDGER
+            doc.setFontSize(10);
+            doc.setTextColor(245, 158, 11);
+            doc.text("RI.11.1 TEXTUAL EVIDENCE & INFERENCE ANALYSIS:", 15, y);
+            y += 6;
+
+            doc.setFontSize(8);
+            doc.setTextColor(226, 232, 240);
+
+            if (evidenceEntries.length === 0) {
+                doc.text("No textual evidence entries committed.", 20, y);
+            } else {
+                evidenceEntries.forEach((e, idx) => {
+                    if (y > 270) { doc.addPage(); y = 20; }
+                    
+                    doc.setFont("courier", "bold");
+                    doc.setTextColor(245, 158, 11);
+                    doc.text(`ENTRY ${idx + 1}:`, 15, y);
+                    y += 4;
+
+                    doc.setFont("courier", "normal");
+                    doc.setTextColor(226, 232, 240);
+                    
+                    const qLines = doc.splitTextToSize(`EVIDENCE: ${e.quote}`, 175);
+                    doc.text(qLines, 20, y);
+                    y += (qLines.length * 4);
+
+                    const iLines = doc.splitTextToSize(`ANALYSIS: ${e.inference}`, 175);
+                    doc.text(iLines, 20, y);
+                    y += (iLines.length * 4);
+
+                    if (e.ambiguity) {
+                        const aLines = doc.splitTextToSize(`AMBIGUITY: ${e.ambiguity}`, 175);
+                        doc.setTextColor(192, 132, 252);
+                        doc.text(aLines, 20, y);
+                        y += (aLines.length * 4);
+                    }
+                    y += 4;
+                });
+            }
+
+            // Save File
+            doc.save(`${currentUser.name.replace(/\s+/g, '_')}_Equiano_Blueprint_Portfolio.pdf`);
+            showToast("📄 Blueprint Portfolio PDF Downloaded!", "emerald");
+        }
+    </script>
+</body>
+</html>
